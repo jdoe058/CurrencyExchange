@@ -23,7 +23,7 @@ import java.util.Optional;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ExchangeRateDao {
 
-    private static final String FIND_ALL_QUERY = """
+    public static final String FIND_ALL_QUERY_PATTERN = """
             SELECT exchange_rates.id    AS id,
                 base_currency_id        AS base_id,
                 base.full_name          AS base_full_name,
@@ -33,7 +33,7 @@ public class ExchangeRateDao {
                 target.full_name        AS target_full_name,
                 target.code             AS target_code,
                 target.sign             AS target_sign,
-                rate
+                %s                      AS rate
             FROM exchange_rates
             JOIN currencies AS base
                 ON base_currency_id = base.id
@@ -41,7 +41,8 @@ public class ExchangeRateDao {
                 ON target_currency_id = target.id
             """;
 
-    private static final String FIND_BY_CODES_QUERY = FIND_ALL_QUERY + """
+    private static final String FIND_ALL_QUERY = FIND_ALL_QUERY_PATTERN.formatted("rate");
+    public static final String FIND_BY_CODES_QUERY = FIND_ALL_QUERY + """
             WHERE base.code = ? AND target.code = ?
             """;
 
