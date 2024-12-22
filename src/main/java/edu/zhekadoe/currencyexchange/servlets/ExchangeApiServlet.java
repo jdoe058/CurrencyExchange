@@ -1,9 +1,11 @@
 package edu.zhekadoe.currencyexchange.servlets;
 
+import edu.zhekadoe.currencyexchange.ApiMapper;
+import edu.zhekadoe.currencyexchange.dao.ExchangeDao;
 import edu.zhekadoe.currencyexchange.dto.ExchangeDto;
 import edu.zhekadoe.currencyexchange.exception.ApiBadRequestException;
-import edu.zhekadoe.currencyexchange.exception.ValidatorException;
-import edu.zhekadoe.currencyexchange.services.ExchangeApiService;
+import edu.zhekadoe.currencyexchange.validator.ExchangeRateValidator;
+import edu.zhekadoe.currencyexchange.validator.ValidationResult;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,7 +16,10 @@ import java.io.IOException;
 @WebServlet("/api/exchange")
 public class ExchangeApiServlet extends HttpServlet {
     public static final String FIELD_IS_MISSING_MESSAGE = "A required form field is missing";
-    private final ExchangeApiService exchangeApiService = ExchangeApiService.getInstance();
+
+    private final ExchangeRateValidator exchangeRateValidator = ExchangeRateValidator.getInstance();
+    private final ExchangeDao exchangeDao = ExchangeDao.getInstance();
+    private final ApiMapper mapper = ApiMapper.getInstance();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -23,10 +28,12 @@ public class ExchangeApiServlet extends HttpServlet {
                 req.getParameter("to"),
                 req.getParameter("amount")
         );
-        try {
-            resp.getWriter().write(exchangeApiService.get(dto));
-        } catch (ValidatorException e) {
+
+        ValidationResult validate = exchangeRateValidator.validate(dto);
+        if (!validate.isValid()) {
             throw new ApiBadRequestException(FIELD_IS_MISSING_MESSAGE);
         }
+
+        resp.getWriter().write(mapper.toJson(exchangeDao.exchange(dto)));
     }
 }

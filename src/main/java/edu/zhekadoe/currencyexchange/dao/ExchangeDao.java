@@ -1,85 +1,159 @@
 package edu.zhekadoe.currencyexchange.dao;
 
 import edu.zhekadoe.currencyexchange.dto.ConvertedDto;
+import edu.zhekadoe.currencyexchange.dto.ExchangeDto;
 import edu.zhekadoe.currencyexchange.exception.DaoException;
 import edu.zhekadoe.currencyexchange.exception.DaoNotFoundException;
 import edu.zhekadoe.currencyexchange.utils.ConnectionManager;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
 
-import static edu.zhekadoe.currencyexchange.dao.ExchangeRateDao.FIND_ALL_QUERY_PATTERN;
-import static edu.zhekadoe.currencyexchange.dao.ExchangeRateDao.FIND_BY_CODES_QUERY;
-
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ExchangeDao {
-    private static final ExchangeDao INSTANCE = new ExchangeDao();
-    private final CurrencyDao currencyDao = CurrencyDao.getInstance();
+    private static final String CROSS_CURRENCY_CODE = "RUB";
 
-    public static ExchangeDao getInstance() {
-        return INSTANCE;
-    }
+    private static final String FIND_DIRECT = """
+            SELECT
+                base_currency_id        AS base_id,
+                base.full_name          AS base_full_name,
+                base.code               AS base_code,
+                base.sign               AS base_sign,
+                target_currency_id      AS target_id,
+                target.full_name        AS target_full_name,
+                target.code             AS target_code,
+                target.sign             AS target_sign,
+                rate                    AS rate,
+                ?                       AS amount
+            FROM exchange_rates
+            JOIN currencies AS base
+                ON base_currency_id = base.id
+            JOIN currencies AS target
+                ON target_currency_id = target.id
+            WHERE base.code = ? AND target.code = ?
+            """;
 
-    private static final String FIND_ALL_REVERSE_QUERY = FIND_ALL_QUERY_PATTERN.formatted("round(1/rate)");
-    private static final String FIND_REVERSE_QUERY = FIND_ALL_REVERSE_QUERY + """
+    private static final String FIND_REVERSE = """
+            SELECT
+                base_currency_id        AS base_id,
+                base.full_name          AS base_full_name,
+                base.code               AS base_code,
+                base.sign               AS base_sign,
+                target_currency_id      AS target_id,
+                target.full_name        AS target_full_name,
+                target.code             AS target_code,
+                target.sign             AS target_sign,
+                1.0/rate                AS rate,
+                ?                       AS amount
+            FROM exchange_rates
+            JOIN currencies     AS base
+                ON base_currency_id = base.id
+            JOIN currencies     AS target
+                ON target_currency_id = target.id
             WHERE target.code = ? AND base.code = ?
             """;
 
-    private static final String CROSS_CURRENCY_CODE = "RUB";
+    private static final String FIND_CROSS = """
+            SELECT
+                base.id                 AS base_id,
+                base.full_name          AS base_full_name,
+                base.code               AS base_code,
+                base.sign               AS base_sign,
+                target.id               AS target_id,
+                target.full_name        AS target_full_name,
+                target.code             AS target_code,
+                target.sign             AS target_sign,
+                e_base.rate/e_target.rate as rate,
+                ?                       AS amount
+            FROM
+                exchange_rates as e_base,
+                exchange_rates as e_target
+            JOIN currencies     as base
+                ON e_base.target_currency_id = base.id
+            JOIN currencies     as target
+                ON e_target.target_currency_id = target.id
+            JOIN currencies     as cross_
+                ON e_base.base_currency_id = cross_.id
+            WHERE cross_.code = ? AND base.code = ? AND target.code = ?
+            """;
 
-    public ConvertedDto exchange(String baseCurrencyCode, String targetCurrencyCode, BigDecimal amount) {
+
+    private static final ExchangeDao INSTANCE = new ExchangeDao();
+    private final CurrencyDao currencyDao = CurrencyDao.getInstance();
+
+    public ConvertedDto exchange(ExchangeDto dto) {
         try (Connection connection = ConnectionManager.get()) {
-            return findDirectRate(connection, FIND_BY_CODES_QUERY, baseCurrencyCode, targetCurrencyCode, amount)
-                    .or(() -> findDirectRate(connection, FIND_REVERSE_QUERY, targetCurrencyCode, baseCurrencyCode, amount))
-                    .orElse(findCrossExchange(connection, baseCurrencyCode, targetCurrencyCode, amount));
+            // or().orElse не работали хз почему
+            Optional<ConvertedDto> directRate = findByCodes(connection, FIND_DIRECT, dto);
+            if (directRate.isPresent()) {
+                return directRate.get();
+            }
+
+            Optional<ConvertedDto> reverseRate = findByCodes(connection, FIND_REVERSE, dto);
+            if (reverseRate.isPresent()) {
+                return reverseRate.get();
+            }
+
+            return findCrossExchange(connection, dto);
         } catch (SQLException e) {
             throw new DaoException(e);
         }
     }
 
-    private Optional<ConvertedDto> findDirectRate(
+    public static ExchangeDao getInstance() {
+        return INSTANCE;
+    }
+
+    private Optional<ConvertedDto> findByCodes(
             Connection connection,
             String query,
-            String baseCurrencyCode,
-            String targetCurrencyCode,
-            BigDecimal amount) {
+            @NonNull ExchangeDto dto) {
 
         try (var stmt = connection.prepareStatement(query)) {
-            stmt.setString(1, baseCurrencyCode);
-            stmt.setString(2, targetCurrencyCode);
+            stmt.setString(1, dto.getValue());
+            stmt.setString(2, dto.getBaseCurrencyCode());
+            stmt.setString(3, dto.getTargetCurrencyCode());
             ResultSet rs = stmt.executeQuery();
+
             if (rs.next()) {
-                return Optional.of(ConvertedDto.of(
-                        currencyDao.buildCurrency(rs, "base_"),
-                        currencyDao.buildCurrency(rs, "target_"),
-                        rs.getBigDecimal("rate"), amount));
+                return Optional.of(buildConvertedDto(rs));
             }
+
             return Optional.empty();
         } catch (SQLException e) {
             throw new DaoException(e);
         }
     }
 
-    public ConvertedDto findCrossExchange(Connection conn, String baseCode, String targetCode, BigDecimal amount) throws SQLException {
-        var baseRate = findDirectRate(conn, FIND_BY_CODES_QUERY, CROSS_CURRENCY_CODE, baseCode, amount)
-                .orElseThrow(this::currencyNotFound);
-        var targetRate = findDirectRate(conn, FIND_BY_CODES_QUERY, CROSS_CURRENCY_CODE, targetCode, amount)
-                .orElseThrow(this::currencyNotFound);
+    public ConvertedDto findCrossExchange(
+            Connection conn,
+            @NonNull ExchangeDto dto) throws SQLException {
+        try (PreparedStatement stmt = conn.prepareStatement(FIND_CROSS)) {
+            stmt.setString(1, dto.getValue());
+            stmt.setString(2, CROSS_CURRENCY_CODE);
+            stmt.setString(3, dto.getBaseCurrencyCode());
+            stmt.setString(4, dto.getTargetCurrencyCode());
+            ResultSet rs = stmt.executeQuery();
 
+            if (rs.next()) {
+                return buildConvertedDto(rs);
+            }
+
+            throw new DaoNotFoundException("Currency not found");
+        }
+    }
+
+    private ConvertedDto buildConvertedDto(ResultSet rs) throws SQLException {
         return ConvertedDto.of(
-                baseRate.getTargetCurrency(),
-                targetRate.getTargetCurrency(),
-                baseRate.getRate().divide(targetRate.getRate(), 6, RoundingMode.HALF_UP), amount);
+                currencyDao.buildCurrency(rs, "base_"),
+                currencyDao.buildCurrency(rs, "target_"),
+                rs.getBigDecimal("rate"),
+                rs.getBigDecimal("amount"));
     }
-
-    private DaoException currencyNotFound() {
-        return new DaoNotFoundException("Currency not found");
-    }
-
 }
