@@ -19,11 +19,9 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ExchangeRateDao {
 
-    public static final String CURRENCY_PAIR_ALREADY_EXISTS_MESSAGE = "A currency pair with this code already exists";
-    public static final String EXCHANGE_RATE_NOT_FOUND_MESSAGE = "Exchange rate for the pair not found";
+    private static final String CURRENCY_PAIR_ALREADY_EXISTS_MESSAGE = "A currency pair with this code already exists";
 
-
-    public static final String FIND_ALL_QUERY = """
+    private static final String FIND_ALL_QUERY = """
             SELECT exchange_rates.id    AS id,
                 base_currency_id        AS base_id,
                 base.full_name          AS base_full_name,
@@ -41,7 +39,7 @@ public class ExchangeRateDao {
                 ON target_currency_id = target.id
             """;
 
-    public static final String FIND_BY_CODES_QUERY = FIND_ALL_QUERY + """
+    private static final String FIND_BY_CODES_QUERY = FIND_ALL_QUERY + """
             WHERE base.code = ? AND target.code = ?
             """;
 
@@ -119,15 +117,14 @@ public class ExchangeRateDao {
             if (rs.next()) {
                 return buildExchangeRate(rs);
             }
-            throw new DaoNotFoundException(EXCHANGE_RATE_NOT_FOUND_MESSAGE);
+            throw new DaoNotFoundException("Exchange rate for the pair not found");
         } catch (SQLException e) {
             throw new DaoException(e.getMessage());
         }
     }
 
     private ExchangeRate create(
-            Connection conn, Currency base, Currency target, String validRateString) throws SQLException {
-        BigDecimal rate = new BigDecimal(validRateString);
+            Connection conn, Currency base, Currency target, BigDecimal rate) throws SQLException {
         try (var stmt = conn.prepareStatement(INSERT_QUERY)) {
             stmt.setLong(1, base.getId());
             stmt.setLong(2, target.getId());
@@ -139,8 +136,7 @@ public class ExchangeRateDao {
     }
 
     private ExchangeRate update(
-            Connection conn, Currency base, Currency target, String validRateString) throws SQLException {
-        BigDecimal rate = new BigDecimal(validRateString);
+            Connection conn, Currency base, Currency target, BigDecimal rate) throws SQLException {
         try (var stmt = conn.prepareStatement(UPDATE_QUERY)) {
             stmt.setBigDecimal(1, rate);
             stmt.setLong(2, base.getId());

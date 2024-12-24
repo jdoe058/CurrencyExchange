@@ -10,13 +10,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import java.io.IOException;
-
-import static edu.zhekadoe.currencyexchange.utils.ApiServletPath.*;
-
 @WebServlet("/api/exchangeRate/*")
 public class ExchangeRateServlet extends HttpServlet {
-    private static final int EXCHANGE_RATE_PATH_SIZE = 6;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ExchangeRateDao exchangeRateDao = ExchangeRateDao.getInstance();
 
@@ -35,19 +30,15 @@ public class ExchangeRateServlet extends HttpServlet {
     }
 
     @Override
-    protected void doPatch(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String path = req.getPathInfo();
-        validatePath(path, EXCHANGE_RATE_PATH_SIZE);
-
-        String rate =  getRate(req.getReader().readLine());
-
-        ExchangeDto rateDto = ExchangeDto.of(
-                path.substring(BEGIN_BASE_INDEX, BEGIN_TARGET_INDEX).toUpperCase(),
-                path.substring(BEGIN_TARGET_INDEX).toUpperCase(),
-                rate);
+    protected void doPatch(HttpServletRequest req, HttpServletResponse resp) {
 
         try {
+            String path = req.getPathInfo();
+            String rate = getRate(req.getReader().readLine());
+            ExchangeDto rateDto = ExchangeDto.of(path, rate);
             objectMapper.writeValue(resp.getWriter(), exchangeRateDao.update(rateDto));
+        } catch (IllegalArgumentException e){
+            throw new ApiBadRequestException(e.getMessage());
         } catch (DaoNotFoundException e) {
             throw new ApiNotFoundException(e.getMessage());
         } catch (DaoConflictException e) {
@@ -55,11 +46,10 @@ public class ExchangeRateServlet extends HttpServlet {
         } catch (Exception e) {
             throw new ApiException(e.getMessage());
         }
-
-
     }
 
     private static String getRate(String params) {
+
         if (params == null || params.isEmpty()) {
             throw new IllegalArgumentException("Request body is empty or null.");
         }

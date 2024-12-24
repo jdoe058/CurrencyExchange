@@ -114,7 +114,7 @@ public class ExchangeDao {
             @NonNull ExchangeDto dto) {
 
         try (var stmt = connection.prepareStatement(query)) {
-            stmt.setString(1, dto.value());
+            stmt.setBigDecimal(1, dto.value());
             stmt.setString(2, dto.codes().base());
             stmt.setString(3, dto.codes().target());
             ResultSet rs = stmt.executeQuery();
@@ -133,7 +133,7 @@ public class ExchangeDao {
             Connection conn,
             @NonNull ExchangeDto dto) throws SQLException {
         try (PreparedStatement stmt = conn.prepareStatement(FIND_CROSS)) {
-            stmt.setString(1, dto.value());
+            stmt.setBigDecimal(1, dto.value());
             stmt.setString(2, CROSS_CURRENCY_CODE);
             stmt.setString(3, dto.codes().base());
             stmt.setString(4, dto.codes().target());

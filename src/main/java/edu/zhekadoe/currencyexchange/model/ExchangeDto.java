@@ -1,8 +1,26 @@
 package edu.zhekadoe.currencyexchange.model;
 
-public record ExchangeDto(CurrencyPairCodesDto codes, String value) {
+import java.math.BigDecimal;
+
+public record ExchangeDto(CurrencyPairCodesDto codes, BigDecimal value) {
+
+    public static ExchangeDto of(CurrencyPairCodesDto dto, String value) {
+        try {
+            BigDecimal decimal = new BigDecimal(value);
+            if (decimal.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Value must be greater than zero");
+            }
+            return new ExchangeDto(dto, decimal);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid currency code: " + value);
+        }
+    }
+
+    public static ExchangeDto of(String path, String value) {
+        return ExchangeDto.of(CurrencyPairCodesDto.of(path), value);
+    }
 
     public static ExchangeDto of(String baseCurrencyCode, String targetCurrencyCode, String value) {
-        return new ExchangeDto(CurrencyPairCodesDto.of(baseCurrencyCode, targetCurrencyCode), value);
+        return ExchangeDto.of(CurrencyPairCodesDto.of(baseCurrencyCode, targetCurrencyCode), value);
     }
 }

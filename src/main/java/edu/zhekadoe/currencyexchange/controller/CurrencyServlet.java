@@ -1,18 +1,15 @@
 package edu.zhekadoe.currencyexchange.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.zhekadoe.currencyexchange.exception.ApiBadRequestException;
 import edu.zhekadoe.currencyexchange.model.CurrencyDao;
 import edu.zhekadoe.currencyexchange.exception.ApiException;
 import edu.zhekadoe.currencyexchange.exception.ApiNotFoundException;
 import edu.zhekadoe.currencyexchange.exception.DaoNotFoundException;
-import edu.zhekadoe.currencyexchange.utils.ApiServletPath;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
-
-
 
 @WebServlet("/api/currency/*")
 public class CurrencyServlet extends HttpServlet {
@@ -22,8 +19,12 @@ public class CurrencyServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
         String path = req.getPathInfo();
-        ApiServletPath.validatePath(path, 3);
-        String currencyCode = path.substring(ApiServletPath.BEGIN_BASE_INDEX);
+
+        if (path == null || !path.matches("[A-Za-z]{3}")) {
+           throw new ApiBadRequestException("Invalid path");
+        }
+
+        String currencyCode = path.substring(1);
 
         try {
             objectMapper.writeValue(resp.getWriter(), currencyDao.findByCode(currencyCode));
