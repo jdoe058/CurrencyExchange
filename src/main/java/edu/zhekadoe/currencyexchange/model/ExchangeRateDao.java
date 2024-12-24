@@ -109,11 +109,11 @@ public class ExchangeRateDao {
         }
     }
 
-    public ExchangeRate findByCodes(FindExchangeRateDto dto) {
+    public ExchangeRate findByCodes(CurrencyPairCodesDto dto) {
         try (var conn = ConnectionManager.get();
              var stmt = conn.prepareStatement(FIND_BY_CODES_QUERY)) {
-            stmt.setString(1, dto.getBaseCurrencyCode());
-            stmt.setString(2, dto.getTargetCurrencyCode());
+            stmt.setString(1, dto.base());
+            stmt.setString(2, dto.target());
             var rs = stmt.executeQuery();
 
             if (rs.next()) {

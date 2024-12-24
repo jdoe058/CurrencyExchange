@@ -2,7 +2,7 @@ package edu.zhekadoe.currencyexchange.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.zhekadoe.currencyexchange.model.ExchangeRateDao;
-import edu.zhekadoe.currencyexchange.model.FindExchangeRateDto;
+import edu.zhekadoe.currencyexchange.model.CurrencyPairCodesDto;
 import edu.zhekadoe.currencyexchange.model.ExchangeDto;
 import edu.zhekadoe.currencyexchange.exception.*;
 import jakarta.servlet.annotation.WebServlet;
@@ -22,14 +22,10 @@ public class ExchangeRateServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
-        String path = req.getPathInfo();
-        validatePath(path, EXCHANGE_RATE_PATH_SIZE);
-
-        FindExchangeRateDto findDto = FindExchangeRateDto.of(
-                path.substring(BEGIN_BASE_INDEX, BEGIN_TARGET_INDEX).toUpperCase(),
-                path.substring(BEGIN_TARGET_INDEX).toUpperCase());
 
         try {
+            String path = req.getPathInfo();
+            CurrencyPairCodesDto findDto = CurrencyPairCodesDto.of(path);
             objectMapper.writeValue(resp.getWriter(), exchangeRateDao.findByCodes(findDto));
         } catch (DaoNotFoundException e) {
             throw new ApiNotFoundException(e.getMessage());
