@@ -20,11 +20,11 @@ public class CurrencyServlet extends HttpServlet {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
         String path = req.getPathInfo();
 
-        if (path == null || !path.matches("[A-Za-z]{3}")) {
+        if (path == null || !path.matches("/[A-Za-z]{3}")) {
            throw new ApiBadRequestException("Invalid path");
         }
 
-        String currencyCode = path.substring(1);
+        String currencyCode = path.substring(1).toUpperCase();
 
         try {
             objectMapper.writeValue(resp.getWriter(), currencyDao.findByCode(currencyCode));

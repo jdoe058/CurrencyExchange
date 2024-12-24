@@ -1,6 +1,7 @@
 # Обмен валют
 
-Адрес для тестирования http://194.87.102.96:8080/
+Тестовый фронт http://194.87.102.96:8000/
+API http://194.87.102.96:8080/CurrencyExchange/api
 
 - Java - Collections, OOP
 - Gradle

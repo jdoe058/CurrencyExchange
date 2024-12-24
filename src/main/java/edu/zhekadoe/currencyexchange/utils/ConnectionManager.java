@@ -6,7 +6,7 @@ import java.sql.*;
 
 @UtilityClass
 public class ConnectionManager {
-    //export DB_URL=jdbc:sqlite:/root/apache-tomcat-11.0.2/webapps/ROOT/WEB-INF/currency_exchanger.sqlite
+    //export DB_URL=jdbc:sqlite:/root/apache-tomcat-11.0.2/webapps/CurrencyExchange/WEB-INF/classes/currency_exchanger.sqlite
     private static final String INIT_QUERY = """
             PRAGMA foreign_keys = ON;
             
