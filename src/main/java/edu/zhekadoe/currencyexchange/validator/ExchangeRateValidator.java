@@ -1,6 +1,6 @@
 package edu.zhekadoe.currencyexchange.validator;
 
-import edu.zhekadoe.currencyexchange.dto.ExchangeDto;
+import edu.zhekadoe.currencyexchange.model.ExchangeDto;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;

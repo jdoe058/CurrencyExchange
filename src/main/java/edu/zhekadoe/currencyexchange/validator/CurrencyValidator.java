@@ -1,6 +1,6 @@
 package edu.zhekadoe.currencyexchange.validator;
 
-import edu.zhekadoe.currencyexchange.dto.CurrencyDto;
+import edu.zhekadoe.currencyexchange.model.CurrencyDto;
 import lombok.NoArgsConstructor;
 
 import static lombok.AccessLevel.PRIVATE;

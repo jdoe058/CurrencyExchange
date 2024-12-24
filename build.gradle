@@ -46,5 +46,5 @@ test {
 }
 
 war {
-    archiveFileName = "ROOT.war"
+    archiveFileName = "CurrencyExchange.war"
 }
