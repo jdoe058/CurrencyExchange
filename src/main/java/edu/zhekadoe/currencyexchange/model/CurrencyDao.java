@@ -13,7 +13,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import static org.sqlite.SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE;
 
@@ -80,9 +79,9 @@ public class CurrencyDao {
     public Currency create(CurrencyDto dto) {
         try (Connection conn = ConnectionManager.get();
              var stmt = conn.prepareStatement(INSERT_QUERY)) {
-            stmt.setString(1, dto.getName());
-            stmt.setString(2, dto.getCode().toUpperCase(Locale.ROOT));
-            stmt.setString(3, dto.getSign());
+            stmt.setString(1, dto.name());
+            stmt.setString(2, dto.code());
+            stmt.setString(3, dto.sign());
             ResultSet rs = stmt.executeQuery();
             rs.next();
             return buildCurrency(rs);
