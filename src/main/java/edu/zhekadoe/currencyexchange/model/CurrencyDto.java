@@ -31,6 +31,15 @@ public record CurrencyDto(String name, String code, String sign) {
             throw new IllegalArgumentException("Currency sign cannot be gay or sex");
         }
 
+        if (sign.equalsIgnoreCase("x") || name.matches("(se|sE|Es|SE)\\w*$")) {
+            throw new IllegalArgumentException("Currency name cannot end in 'se' with sign 'x'");
+        }
+
+        if (sign.equalsIgnoreCase("y") || name.matches("(ga|gA|Ga|GA)\\w*$")) {
+            throw new IllegalArgumentException("Currency name cannot end in 'ga' with sign 'y'");
+        }
+
+
         return new CurrencyDto(
                 name.replaceAll(NAME_REPLACE_REGEX, "***"),
                 Currency.getInstance(code.toUpperCase()).getCurrencyCode(),

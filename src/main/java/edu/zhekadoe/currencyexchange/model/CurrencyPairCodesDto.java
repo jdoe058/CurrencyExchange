@@ -17,6 +17,10 @@ public record CurrencyPairCodesDto(String base, String target) {
             throw new IllegalArgumentException("Target currency is not valid");
         }
 
+        if (target.equalsIgnoreCase(base)) {
+            throw new IllegalArgumentException("Currencies are equal");
+        }
+
         return new CurrencyPairCodesDto(base.toUpperCase(), target.toUpperCase());
     }
 

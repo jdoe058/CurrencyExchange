@@ -5,11 +5,15 @@ import java.math.BigDecimal;
 public record ExchangeDto(CurrencyPairCodesDto codes, BigDecimal value) {
 
     public static ExchangeDto of(CurrencyPairCodesDto dto, String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Value cannot be null or empty");
+        }
         try {
             BigDecimal decimal = new BigDecimal(value);
             if (decimal.compareTo(BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException("Value must be greater than zero");
             }
+
             return new ExchangeDto(dto, decimal);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid currency code: " + value);
