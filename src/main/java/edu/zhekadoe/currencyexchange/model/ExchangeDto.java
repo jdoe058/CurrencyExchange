@@ -1,18 +1,8 @@
 package edu.zhekadoe.currencyexchange.model;
 
-import lombok.Value;
+public record ExchangeDto(CurrencyPairCodesDto codes, String value) {
 
-@Value(staticConstructor = "of")
-public class ExchangeDto {
-    String baseCurrencyCode;
-    String targetCurrencyCode;
-    String value;
-
-    public String getBaseCurrencyCode() {
-        return baseCurrencyCode.toUpperCase();
-    }
-
-    public String getTargetCurrencyCode() {
-        return targetCurrencyCode.toUpperCase();
+    public static ExchangeDto of(String baseCurrencyCode, String targetCurrencyCode, String value) {
+        return new ExchangeDto(CurrencyPairCodesDto.of(baseCurrencyCode, targetCurrencyCode), value);
     }
 }

@@ -15,7 +15,7 @@ import java.util.Optional;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ExchangeDao {
-    private static final String CROSS_CURRENCY_CODE = "RUB";
+    private static final String CROSS_CURRENCY_CODE = "USD";
 
     private static final String FIND_DIRECT = """
             SELECT
@@ -114,9 +114,9 @@ public class ExchangeDao {
             @NonNull ExchangeDto dto) {
 
         try (var stmt = connection.prepareStatement(query)) {
-            stmt.setString(1, dto.getValue());
-            stmt.setString(2, dto.getBaseCurrencyCode());
-            stmt.setString(3, dto.getTargetCurrencyCode());
+            stmt.setString(1, dto.value());
+            stmt.setString(2, dto.codes().base());
+            stmt.setString(3, dto.codes().target());
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {
@@ -133,10 +133,10 @@ public class ExchangeDao {
             Connection conn,
             @NonNull ExchangeDto dto) throws SQLException {
         try (PreparedStatement stmt = conn.prepareStatement(FIND_CROSS)) {
-            stmt.setString(1, dto.getValue());
+            stmt.setString(1, dto.value());
             stmt.setString(2, CROSS_CURRENCY_CODE);
-            stmt.setString(3, dto.getBaseCurrencyCode());
-            stmt.setString(4, dto.getTargetCurrencyCode());
+            stmt.setString(3, dto.codes().base());
+            stmt.setString(4, dto.codes().target());
             ResultSet rs = stmt.executeQuery();
 
             if (rs.next()) {

@@ -67,10 +67,10 @@ public class ExchangeRateDao {
 
     public ExchangeRate create(ExchangeDto dto) {
         try (var conn = ConnectionManager.get()) {
-            Currency baseCurrency = currencyDao.findByCode(dto.getBaseCurrencyCode(), conn);
-            Currency targetCurrency = currencyDao.findByCode(dto.getTargetCurrencyCode(), conn);
+            Currency baseCurrency = currencyDao.findByCode(dto.codes().base(), conn);
+            Currency targetCurrency = currencyDao.findByCode(dto.codes().target(), conn);
 
-            return create(conn, baseCurrency, targetCurrency, dto.getValue());
+            return create(conn, baseCurrency, targetCurrency, dto.value());
         } catch (SQLException e) {
             if (e instanceof SQLiteException sqliteE &&
                 sqliteE.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE) {
@@ -82,10 +82,10 @@ public class ExchangeRateDao {
 
     public ExchangeRate update(ExchangeDto dto) {
         try (var conn = ConnectionManager.get()) {
-            Currency baseCurrency = currencyDao.findByCode(dto.getBaseCurrencyCode(), conn);
-            Currency targetCurrency = currencyDao.findByCode(dto.getTargetCurrencyCode(), conn);
+            Currency baseCurrency = currencyDao.findByCode(dto.codes().base(), conn);
+            Currency targetCurrency = currencyDao.findByCode(dto.codes().target(), conn);
 
-            return update(conn, baseCurrency, targetCurrency, dto.getValue());
+            return update(conn, baseCurrency, targetCurrency, dto.value());
         } catch (SQLException e) {
             if (e instanceof SQLiteException sqliteE &&
                 sqliteE.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE) {
